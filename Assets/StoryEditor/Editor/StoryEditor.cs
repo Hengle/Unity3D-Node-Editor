@@ -25,7 +25,10 @@ namespace StoryEditorContext
 
         private Matrix4x4 _noZoomMatrix;
         private Vector2 _zoomPivotPos;
-        
+
+        private Node _curNode = null;
+        private bool _isCanDrawNodeToMouseLine = false;
+
         // editor serialize data
         private StoryCanvas _canvas = null;
 
@@ -68,6 +71,7 @@ namespace StoryEditorContext
             HandleInputEvents();
 
             DrawCenterWindow();
+            
             DrawToolBar();
             DrawNodeInfoWindow();
             DrawPlayInfoWidnow();
@@ -83,9 +87,11 @@ namespace StoryEditorContext
             Rect totalRect = new Rect(0, -kTitleHeight, position.width, position.height);
             GUI.BeginGroup(totalRect);
 
+            HandleLineWithNode();
             HandleRightClickMenu();
             HandleScrollWindow();
             HandleZoomWindow();
+            
 
 
 
@@ -117,8 +123,6 @@ namespace StoryEditorContext
 
         void RightClickMenuCallback(object obj)
         {
-            //Debug.Log("Selected: " + obj);
-
             ActionMenuElement element = ActionMenuInfo.elementList[(int)obj];
             Rect nodeRect = new Rect(_mousePos.x, _mousePos.y, kNodeWidth, kNodeHeight);
             //Zoom
@@ -177,9 +181,45 @@ namespace StoryEditorContext
                 _canvas.zoom += e.delta.y / 50.0f;
                 _canvas.zoom = Mathf.Clamp(_canvas.zoom, 0.5f, 2.0f);
                 
-                Debug.Log(_canvas.zoom);
                 Repaint();
             }
+
+        }
+
+
+        void HandleLineWithNode()
+        {
+            Event e = Event.current;
+            _mousePos = e.mousePosition;
+            // 左键按到Node
+            bool isCanDo = (e.type == EventType.MouseDown) && (e.button == 0) &&
+                !IsInBlankArea(_mousePos);
+
+            if (isCanDo)
+            {
+                Node node = GetNodeFromPosition(_mousePos);
+                Debug.Assert(node != null);
+
+                Rect zoomRect = node.OutputKnobRect;
+                zoomRect = ScaleRect(zoomRect, _canvas.zoom, _zoomPivotPos);
+                bool isHitOutputKnob = zoomRect.Contains(_mousePos);
+
+                if (isHitOutputKnob)
+                {
+                    _isCanDrawNodeToMouseLine = true;
+                    _curNode = node;
+                    Debug.Log("Hit Output Knob");
+                }
+
+            }
+
+            bool isLeftMouseUp = (e.type == EventType.MouseUp) && (e.button == 0);
+            if (isLeftMouseUp)
+            {
+                _isCanDrawNodeToMouseLine = false;
+                _curNode = null;
+            }
+            
 
         }
 
@@ -189,6 +229,7 @@ namespace StoryEditorContext
             BeginZoomCenterWindow();
             DrawGirdBackground();
             DrawNode();
+            DrawNodeToMouseLine();
             EndZoomCenterWidnow();
         }
 
@@ -283,6 +324,34 @@ namespace StoryEditorContext
             GUI.BeginGroup(new Rect(0, kTitleHeight, Screen.width, Screen.height));
         }
 
+
+        void DrawCurve(Vector2 start, Vector2 end)
+        {
+            Vector3 startPos = new Vector3(start.x, start.y);
+            Vector3 endPos = new Vector3(end.x, end.y);
+            Vector3 startTan = startPos + Vector3.right * 50;
+            Vector3 endTan = endPos + Vector3.left * 50;
+            Color shadowColor = new Color(0, 0, 0, 0.1f);
+
+            for (int i = 0; i < 3; i++) // Draw a shadow with 3 shades
+                Handles.DrawBezier(startPos, endPos, startTan, endTan, shadowColor, null, (i + 1) * 4); // increasing width for fading shadow
+            Handles.DrawBezier(startPos, endPos, startTan, endTan, Color.black, null, 2);
+        }
+
+        void DrawNodeToMouseLine()
+        {
+            if (_isCanDrawNodeToMouseLine)
+            {
+                Rect outputRect = _curNode.OutputKnobRect;
+                // todo : dont need scale rect,maybe Handles.DrawBezier have been scale
+                //outputRect = ScaleRect(outputRect, _canvas.zoom, _zoomPivotPos);
+                Vector2 knobPos = outputRect.center;
+                Vector2 mousePos = ScaleVector2(_mousePos, 1.0f / _canvas.zoom, _zoomPivotPos);
+                DrawCurve(knobPos, mousePos);
+                Repaint();
+            }
+        }
+
         void DrawToolBar()
         {
             GUILayout.BeginArea(ToolbarRect, GUI.skin.button);
@@ -353,15 +422,14 @@ namespace StoryEditorContext
 
         public Node GetNodeFromPosition(Vector2 pos)
         {
-            Debug.Log(pos);
+            //Debug.Log(pos);
             for (int i = 0; i < _canvas.nodeList.Count; i++)
             {
                 Node node = _canvas.nodeList[i];
                 Rect nodeTotalRect = node.TotalRect;
                 // zoom
-                // 可以选择不缩放Rect，而去缩放鼠标的点
                 nodeTotalRect = ScaleRect(nodeTotalRect, _canvas.zoom, _zoomPivotPos);
-                Debug.Log(nodeTotalRect);
+                //Debug.Log(nodeTotalRect);
                 if (nodeTotalRect.Contains(pos))
                 {
                     return node;
@@ -372,7 +440,6 @@ namespace StoryEditorContext
 
         public Rect ScaleRect(Rect rect, float scale, Vector2 pivotPoint)
         {
-
             Rect result = rect;
             // 以锚点为中心
             result.x -= pivotPoint.x;
@@ -385,6 +452,18 @@ namespace StoryEditorContext
             result.y += pivotPoint.y;
             return result;
         }
+
+        public Vector2 ScaleVector2(Vector2 pos, float scale, Vector2 pivotPoint)
+        {
+            Vector2 resPos = new Vector2();
+            resPos = pos;
+            resPos -= pivotPoint;
+            resPos *= scale;
+            resPos += pivotPoint;
+            return resPos;
+        }
+
+        
     }
 
 

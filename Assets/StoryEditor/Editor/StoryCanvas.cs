@@ -35,32 +35,6 @@ namespace StoryEditorContext{
             return node;
         }
 
-        //public Node GetNodeFromPosition(Vector2 pos)
-        //{
-        //    for (int i = 0; i < nodeList.Count;i++ )
-        //    {
-        //        Node node = nodeList[i];
-        //        Rect nodeTotalRect = node.TotalRect;
-        //        if (nodeTotalRect.Contains(pos))
-        //        {
-        //            return node;
-        //        }
-        //    }
-        //    return null;
-        //}
-
-        //public bool IsHitNode(Vector2 pos)
-        //{
-        //    if (GetNodeFromPosition(pos) == null)
-        //    {
-        //        return false;
-        //    }
-        //    else
-        //    {
-        //        return true;
-        //    }
-        //}
-
         
     }
 }
