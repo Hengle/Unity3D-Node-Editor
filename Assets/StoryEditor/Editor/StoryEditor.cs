@@ -209,7 +209,7 @@ namespace StoryEditorContext
                 {
                     _isCanDrawNodeToMouseLine = true;
                     _curNode = node;
-                    Debug.Log("Hit Output Knob");
+                    //Debug.Log("Hit Output Knob");
                 }
 
             }
@@ -226,7 +226,6 @@ namespace StoryEditorContext
                     bool isHitInputKnob = inputRect.Contains(_mousePos);
                     if (isHitInputKnob)
                     {
-                        Debug.Log("222222222");
                         Debug.Assert(_curNode != null);
                         Debug.Assert(childNode != null);
                         _curNode.AddChild(childNode);
