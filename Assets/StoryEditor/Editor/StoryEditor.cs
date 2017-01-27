@@ -121,6 +121,13 @@ namespace StoryEditorContext
 
             ActionMenuElement element = ActionMenuInfo.elementList[(int)obj];
             Rect nodeRect = new Rect(_mousePos.x, _mousePos.y, kNodeWidth, kNodeHeight);
+            //Zoom
+            //nodeRect = ScaleRect(nodeRect,1.0f / _canvas.zoom, _zoomPivotPos);
+            Rect tempRect = ScaleRect(nodeRect, 1.0f / _canvas.zoom, _zoomPivotPos);
+            Vector2 pos = tempRect.position;
+            nodeRect.position = pos;
+            
+            
             Node node = _canvas.Create(nodeRect);
             node.actionName = element.actionName;
 
