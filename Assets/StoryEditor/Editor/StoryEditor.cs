@@ -193,7 +193,7 @@ namespace StoryEditorContext
             _mousePos = e.mousePosition;
             // 左键按到Node
             bool isCanDo = (e.type == EventType.MouseDown) && (e.button == 0) &&
-                !IsInBlankArea(_mousePos);
+                IsInNodeArea(_mousePos);
 
             if (isCanDo)
             {
@@ -201,6 +201,7 @@ namespace StoryEditorContext
                 Debug.Assert(node != null);
 
                 Rect zoomRect = node.OutputKnobRect;
+                // convert rect to match mouse pos
                 zoomRect = ScaleRect(zoomRect, _canvas.zoom, _zoomPivotPos);
                 bool isHitOutputKnob = zoomRect.Contains(_mousePos);
 
@@ -216,6 +217,21 @@ namespace StoryEditorContext
             bool isLeftMouseUp = (e.type == EventType.MouseUp) && (e.button == 0);
             if (isLeftMouseUp)
             {
+                bool isInNodeArea = IsInNodeArea(_mousePos);
+                if (isInNodeArea)
+                {
+                    Node childNode = GetNodeFromPosition(_mousePos);
+                    Rect inputRect = childNode.InputKnobRect;
+                    inputRect = ScaleRect(inputRect, _canvas.zoom, _zoomPivotPos);
+                    bool isHitInputKnob = inputRect.Contains(_mousePos);
+                    if (isHitInputKnob)
+                    {
+                        Debug.Log("222222222");
+                        Debug.Assert(_curNode != null);
+                        Debug.Assert(childNode != null);
+                        _curNode.AddChild(childNode);
+                    }
+                }
                 _isCanDrawNodeToMouseLine = false;
                 _curNode = null;
             }
@@ -230,6 +246,7 @@ namespace StoryEditorContext
             DrawGirdBackground();
             DrawNode();
             DrawNodeToMouseLine();
+            DrawNodeConnect();
             EndZoomCenterWidnow();
         }
 
@@ -343,12 +360,32 @@ namespace StoryEditorContext
             if (_isCanDrawNodeToMouseLine)
             {
                 Rect outputRect = _curNode.OutputKnobRect;
-                // todo : dont need scale rect,maybe Handles.DrawBezier have been scale
+                // todo : dont need scale rect,maybe Handles.DrawBezier have been do scale
                 //outputRect = ScaleRect(outputRect, _canvas.zoom, _zoomPivotPos);
                 Vector2 knobPos = outputRect.center;
                 Vector2 mousePos = ScaleVector2(_mousePos, 1.0f / _canvas.zoom, _zoomPivotPos);
                 DrawCurve(knobPos, mousePos);
                 Repaint();
+            }
+        }
+
+        void DrawNodeConnect()
+        {
+            if (_canvas != null)
+            {
+                int nodeCount = _canvas.nodeList.Count;
+                for (int i = 0; i < nodeCount; i++)
+                {
+                    Node parentNode = _canvas.nodeList[i];
+                    for (int ci = 0; ci < parentNode.childList.Count; ci++)
+                    {
+                        int childIndex = parentNode.childList[ci];
+                        Node childNode = _canvas.nodeList[childIndex];
+                        Debug.Assert(childNode != null);
+                        DrawCurve(parentNode.OutputKnobRect.center, 
+                            childNode.InputKnobRect.center);
+                    }
+                }
             }
         }
 
@@ -407,8 +444,14 @@ namespace StoryEditorContext
                 !PlayInfoWindowRect.Contains(mousePos) && !ToolbarRect.Contains(mousePos) && !isHitNode;
         }
 
+        public bool IsInNodeArea(Vector2 mousePos)
+        {
+            bool isHitNode = IsHitNode(mousePos);
+            return !NodeInfoWindowRect.Contains(mousePos) &&
+                !PlayInfoWindowRect.Contains(mousePos) && !ToolbarRect.Contains(mousePos) && isHitNode;
+        }
 
-        public bool IsHitNode(Vector2 pos)
+        bool IsHitNode(Vector2 pos)
         {
             if (GetNodeFromPosition(pos) == null)
             {

@@ -108,6 +108,29 @@ namespace StoryEditorContext
                     );
             }
         }
+
+        public void AddChild(Node node)
+        {
+            Debug.Assert(node != null);
+            node.SetParent(null);
+            if (!childList.Contains(node.Id))
+            {
+                childList.Add(node.Id);
+            }
+            node.SetParent(this);
+        }
+
+        public void SetParent(Node node)
+        {
+            if (node != null)
+            {
+                parentId = node.Id;
+            }
+            else
+            {
+                parentId = -1;
+            }
+        }
     }
 }
 
