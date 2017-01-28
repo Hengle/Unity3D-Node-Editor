@@ -26,7 +26,7 @@ namespace StoryEditorContext
         private Matrix4x4 _noZoomMatrix;
         private Vector2 _zoomPivotPos;
 
-        private Node _curNode = null;
+        private Node _curveStartPointNode = null;
         private bool _isCanDrawNodeToMouseLine = false;
 
         // editor serialize data
@@ -200,16 +200,36 @@ namespace StoryEditorContext
                 Node node = GetNodeFromPosition(_mousePos);
                 Debug.Assert(node != null);
 
-                Rect zoomRect = node.OutputKnobRect;
+                Rect outputRect = node.OutputKnobRect;
                 // convert rect to match mouse pos
-                zoomRect = ScaleRect(zoomRect, _canvas.zoom, _zoomPivotPos);
-                bool isHitOutputKnob = zoomRect.Contains(_mousePos);
+                outputRect = ScaleRect(outputRect, _canvas.zoom, _zoomPivotPos);
+                bool isHitOutputKnob = outputRect.Contains(_mousePos);
+
+                Rect inputRect = node.InputKnobRect;
+                inputRect = ScaleRect(inputRect, _canvas.zoom, _zoomPivotPos);
+                bool isHitInputKnob = inputRect.Contains(_mousePos);
+
 
                 if (isHitOutputKnob)
                 {
                     _isCanDrawNodeToMouseLine = true;
-                    _curNode = node;
+                    _curveStartPointNode = node;
                     //Debug.Log("Hit Output Knob");
+                }
+
+                if (isHitInputKnob)
+                {
+                    int parentIndex = node.parentId;
+                    if (parentIndex != -1)
+                    {
+                        Node parentNode = _canvas.nodeList[parentIndex];
+                        _curveStartPointNode = parentNode;
+                        _isCanDrawNodeToMouseLine = true;
+                        Debug.Assert(_curveStartPointNode != null);
+                        _canvas.NodeRemoveChild(_curveStartPointNode, node);
+                    }
+                    
+                    
                 }
 
             }
@@ -226,18 +246,20 @@ namespace StoryEditorContext
                     bool isHitInputKnob = inputRect.Contains(_mousePos);
                     if (isHitInputKnob)
                     {
-                        Debug.Assert(_curNode != null);
+                        Debug.Assert(_curveStartPointNode != null);
                         Debug.Assert(childNode != null);
-                        _curNode.AddChild(childNode);
+                        _canvas.NodeAddChild(_curveStartPointNode, childNode);
                     }
+                    
                 }
                 _isCanDrawNodeToMouseLine = false;
-                _curNode = null;
+                _curveStartPointNode = null;
             }
             
 
         }
 
+        
 
         void DrawCenterWindow()
         {
@@ -358,7 +380,7 @@ namespace StoryEditorContext
         {
             if (_isCanDrawNodeToMouseLine)
             {
-                Rect outputRect = _curNode.OutputKnobRect;
+                Rect outputRect = _curveStartPointNode.OutputKnobRect;
                 // todo : dont need scale rect,maybe Handles.DrawBezier have been do scale
                 //outputRect = ScaleRect(outputRect, _canvas.zoom, _zoomPivotPos);
                 Vector2 knobPos = outputRect.center;

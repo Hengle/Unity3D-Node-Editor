@@ -35,7 +35,53 @@ namespace StoryEditorContext{
             return node;
         }
 
-        
+        public void NodeAddChild(Node parent, Node child)
+        {
+            Debug.Assert(parent != null && child != null);
+            if (!parent.childList.Contains(child.Id))
+            {
+                parent.childList.Add(child.Id);
+                NodeSetParent(child, parent);
+            }
+            
+            
+        }
+
+        public void NodeSetParent(Node child, Node parent)
+        {
+            Debug.Assert(parent != null && child != null);
+            if (child.parentId != parent.Id)
+            {
+                if (child.parentId != -1)
+                {
+                    Node preParent = nodeList[child.parentId];
+                    preParent.childList.Remove(child.Id);
+                }
+                child.parentId = parent.Id;
+                NodeAddChild(parent, child);
+            }
+        }
+
+
+        public void NodeRemoveChild(Node parent, Node child)
+        {
+            Debug.Assert(parent != null && child != null);
+            if (parent.childList.Contains(child.Id))
+            {
+                parent.childList.Remove(child.Id);
+                NodeRemoveParent(child, parent);
+            }
+        }
+
+        public void NodeRemoveParent(Node child, Node parent)
+        {
+            Debug.Assert(parent != null && child != null);
+            if (child.parentId == parent.Id)
+            {
+                child.parentId = -1;
+                NodeRemoveChild(parent, child);
+            }
+        }
     }
 }
 
