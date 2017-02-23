@@ -67,11 +67,7 @@ namespace StoryEditorContext
 
         void OnGUI()
         {
-            
-            HandleInputEvents();
-
             DrawCenterWindow();
-            
             DrawToolBar();
             DrawNodeInfoWindow();
             DrawPlayInfoWidnow();
@@ -82,23 +78,10 @@ namespace StoryEditorContext
 
         void HandleInputEvents()
         {
-            // 鼠标的原点过title的左上角，而GUI的就是在Widnow的左上角，
-            // 这里就是让event.mousePos的原点移到Widnow的左上角,对齐GUI的Rect的原点
-            Rect totalRect = new Rect(0, -kTitleHeight, position.width, position.height);
-            GUI.BeginGroup(totalRect);
-
             HandleLineWithNode();
             HandleRightClickMenu();
             HandleScrollWindow();
             HandleZoomWindow();
-            
-
-
-
-            GUI.EndGroup();
-
-            
-
         }
 
         void HandleRightClickMenu()
@@ -125,16 +108,8 @@ namespace StoryEditorContext
         {
             ActionMenuElement element = ActionMenuInfo.elementList[(int)obj];
             Rect nodeRect = new Rect(_mousePos.x, _mousePos.y, kNodeWidth, kNodeHeight);
-            //Zoom
-            //nodeRect = ScaleRect(nodeRect,1.0f / _canvas.zoom, _zoomPivotPos);
-            Rect tempRect = ScaleRect(nodeRect, 1.0f / _canvas.zoom, _zoomPivotPos);
-            Vector2 pos = tempRect.position;
-            nodeRect.position = pos;
-            
-            
             Node node = _canvas.Create(nodeRect);
             node.actionName = element.actionName;
-
         }
 
         void HandleScrollWindow()
@@ -199,17 +174,10 @@ namespace StoryEditorContext
             {
                 Node node = GetNodeFromPosition(_mousePos);
                 Debug.Assert(node != null);
-
                 Rect outputRect = node.OutputKnobRect;
-                // convert rect to match mouse pos
-                outputRect = ScaleRect(outputRect, _canvas.zoom, _zoomPivotPos);
                 bool isHitOutputKnob = outputRect.Contains(_mousePos);
-
                 Rect inputRect = node.InputKnobRect;
-                inputRect = ScaleRect(inputRect, _canvas.zoom, _zoomPivotPos);
                 bool isHitInputKnob = inputRect.Contains(_mousePos);
-
-
                 if (isHitOutputKnob)
                 {
                     _isCanDrawNodeToMouseLine = true;
@@ -242,7 +210,6 @@ namespace StoryEditorContext
                 {
                     Node childNode = GetNodeFromPosition(_mousePos);
                     Rect inputRect = childNode.InputKnobRect;
-                    inputRect = ScaleRect(inputRect, _canvas.zoom, _zoomPivotPos);
                     bool isHitInputKnob = inputRect.Contains(_mousePos);
                     if (isHitInputKnob)
                     {
@@ -264,6 +231,7 @@ namespace StoryEditorContext
         void DrawCenterWindow()
         {
             BeginZoomCenterWindow();
+            HandleInputEvents();
             DrawGirdBackground();
             DrawNode();
             DrawNodeToMouseLine();
@@ -273,12 +241,6 @@ namespace StoryEditorContext
 
         void DrawNode()
         {
-            // 加了之后会令Node一直以Vector2.zero为轴心缩放，但是想要的效果是要以屏幕的中点为轴心缩放
-            //Rect totalRect = new Rect(0, kTitleHeight, position.width, position.height);
-            ////totalRect = ScaleRect(totalRect, 1.0f / _canvas.zoom, Vector2.zero);
-            //totalRect = ScaleRect(totalRect,  _canvas.zoom, _zoomPivotPos);
-            //GUI.BeginGroup(totalRect);
-
             BeginWindows();
 
             if (_canvas != null)
@@ -294,9 +256,6 @@ namespace StoryEditorContext
             }
 
             EndWindows();
-
-            //GUI.EndGroup();
-
         }
         void DrawNodeWindow(int id)
         {
@@ -326,7 +285,6 @@ namespace StoryEditorContext
 
                     // todo : must need zero to scaleRect
                     unitRect = ScaleRect(unitRect, _canvas.zoom, Vector2.zero);
-                    //unitRect = ScaleRect(unitRect, _canvas.zoom, _zoomPivotPos);
                     Vector2 totalSize = totalRect.size + new Vector2(Mathf.Abs(unitRect.x), Mathf.Abs(unitRect.y));
 
                     int tileX = Mathf.CeilToInt(totalSize.x / unitRect.width);
@@ -381,10 +339,8 @@ namespace StoryEditorContext
             if (_isCanDrawNodeToMouseLine)
             {
                 Rect outputRect = _curveStartPointNode.OutputKnobRect;
-                // todo : dont need scale rect,maybe Handles.DrawBezier have been do scale
-                //outputRect = ScaleRect(outputRect, _canvas.zoom, _zoomPivotPos);
                 Vector2 knobPos = outputRect.center;
-                Vector2 mousePos = ScaleVector2(_mousePos, 1.0f / _canvas.zoom, _zoomPivotPos);
+                Vector2 mousePos = _mousePos;
                 DrawCurve(knobPos, mousePos);
                 Repaint();
             }
@@ -491,9 +447,6 @@ namespace StoryEditorContext
             {
                 Node node = _canvas.nodeList[i];
                 Rect nodeTotalRect = node.TotalRect;
-                // zoom
-                nodeTotalRect = ScaleRect(nodeTotalRect, _canvas.zoom, _zoomPivotPos);
-                //Debug.Log(nodeTotalRect);
                 if (nodeTotalRect.Contains(pos))
                 {
                     return node;
@@ -516,17 +469,6 @@ namespace StoryEditorContext
             result.y += pivotPoint.y;
             return result;
         }
-
-        public Vector2 ScaleVector2(Vector2 pos, float scale, Vector2 pivotPoint)
-        {
-            Vector2 resPos = new Vector2();
-            resPos = pos;
-            resPos -= pivotPoint;
-            resPos *= scale;
-            resPos += pivotPoint;
-            return resPos;
-        }
-
         
     }
 
